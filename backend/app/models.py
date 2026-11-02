@@ -2,7 +2,8 @@ import uuid
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, LargeBinary, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -65,6 +66,12 @@ class Application(Base):
         passive_deletes=True,
         order_by="StatusEvent.occurred_at.desc()",
     )
+    reviews: Mapped[list["ResumeReview"]] = relationship(
+        cascade="all, delete-orphan", passive_deletes=True
+    )
+    cover_letter: Mapped["CoverLetter | None"] = relationship(
+        cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class StatusEvent(Base):
@@ -84,3 +91,47 @@ class StatusEvent(Base):
     )
 
     application: Mapped[Application] = relationship(back_populates="events")
+
+
+class Profile(Base):
+    """Single-row table: the resume and background used by the AI features."""
+
+    __tablename__ = "profile"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    resume_pdf: Mapped[bytes | None] = mapped_column(LargeBinary)
+    resume_filename: Mapped[str | None] = mapped_column(String(255))
+    about_me: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ResumeReview(Base):
+    __tablename__ = "resume_reviews"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"), index=True
+    )
+    score: Mapped[int] = mapped_column(Integer)
+    result: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class CoverLetter(Base):
+    __tablename__ = "cover_letters"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"), unique=True
+    )
+    content: Mapped[str] = mapped_column(Text)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

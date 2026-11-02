@@ -68,3 +68,68 @@ class Stats(BaseModel):
     applied_this_week: int
     response_rate: float
     by_status: dict[ApplicationStatus, int]
+
+
+class ProfileRead(BaseModel):
+    about_me: str | None
+    resume_filename: str | None
+    has_resume: bool
+    updated_at: datetime | None
+
+
+class ProfileUpdate(BaseModel):
+    about_me: str | None = None
+
+
+class KeywordMatch(BaseModel):
+    matched: list[str]
+    missing: list[str]
+
+
+class SectionScores(BaseModel):
+    skills: int = Field(ge=0, le=100)
+    experience: int = Field(ge=0, le=100)
+    education: int = Field(ge=0, le=100)
+    formatting: int = Field(ge=0, le=100)
+
+
+class SuggestedEdit(BaseModel):
+    section: str
+    current: str
+    suggestion: str
+    reason: str
+
+
+class ATSReview(BaseModel):
+    """Structured output the model fills in; also the stored review payload."""
+
+    overall_score: int = Field(ge=0, le=100)
+    summary: str
+    keywords: KeywordMatch
+    section_scores: SectionScores
+    formatting_issues: list[str]
+    strengths: list[str]
+    gaps: list[str]
+    suggested_edits: list[SuggestedEdit]
+
+
+class ResumeReviewRead(BaseModel):
+    id: uuid.UUID
+    created_at: datetime
+    review: ATSReview
+
+
+class CoverLetterGenerate(BaseModel):
+    instructions: str | None = Field(default=None, max_length=1000)
+
+
+class CoverLetterUpdate(BaseModel):
+    content: str
+
+
+class CoverLetterRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    content: str
+    generated_at: datetime
+    updated_at: datetime

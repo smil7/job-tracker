@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import applications, stats
+from app.routers import ai, applications, profile, stats
 
 app = FastAPI(title="Job Tracker API", version="0.1.0")
 
@@ -15,6 +15,8 @@ app.add_middleware(
 
 app.include_router(applications.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
+app.include_router(profile.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["meta"])

@@ -335,6 +335,390 @@
         }
       }
     },
+    "/api/profile": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Read Profile",
+        "operationId": "read_profile_api_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRead"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Update Profile",
+        "operationId": "update_profile_api_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/resume": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Download Resume",
+        "operationId": "download_resume_api_profile_resume_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {}
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Upload Resume",
+        "operationId": "upload_resume_api_profile_resume_put",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_resume_api_profile_resume_put"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{application_id}/review": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Run Review",
+        "operationId": "run_review_api_applications__application_id__review_post",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeReviewRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Latest Review",
+        "operationId": "latest_review_api_applications__application_id__review_get",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeReviewRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{application_id}/cover-letter": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Generate Letter",
+        "operationId": "generate_letter_api_applications__application_id__cover_letter_post",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverLetterGenerate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverLetterRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Read Letter",
+        "operationId": "read_letter_api_applications__application_id__cover_letter_get",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverLetterRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Save Letter",
+        "operationId": "save_letter_api_applications__application_id__cover_letter_put",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverLetterUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverLetterRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{application_id}/cover-letter.docx": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Download Letter",
+        "operationId": "download_letter_api_applications__application_id__cover_letter_docx_get",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -363,6 +747,67 @@
   },
   "components": {
     "schemas": {
+      "ATSReview": {
+        "properties": {
+          "overall_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Score"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "keywords": {
+            "$ref": "#/components/schemas/KeywordMatch"
+          },
+          "section_scores": {
+            "$ref": "#/components/schemas/SectionScores"
+          },
+          "formatting_issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Formatting Issues"
+          },
+          "strengths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Strengths"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Gaps"
+          },
+          "suggested_edits": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedEdit"
+            },
+            "type": "array",
+            "title": "Suggested Edits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_score",
+          "summary",
+          "keywords",
+          "section_scores",
+          "formatting_issues",
+          "strengths",
+          "gaps",
+          "suggested_edits"
+        ],
+        "title": "ATSReview",
+        "description": "Structured output the model fills in; also the stored review payload."
+      },
       "ApplicationCreate": {
         "properties": {
           "job_url": {
@@ -948,6 +1393,76 @@
         "type": "object",
         "title": "ApplicationUpdate"
       },
+      "Body_upload_resume_api_profile_resume_put": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_resume_api_profile_resume_put"
+      },
+      "CoverLetterGenerate": {
+        "properties": {
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          }
+        },
+        "type": "object",
+        "title": "CoverLetterGenerate"
+      },
+      "CoverLetterRead": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "generated_at",
+          "updated_at"
+        ],
+        "title": "CoverLetterRead"
+      },
+      "CoverLetterUpdate": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "CoverLetterUpdate"
+      },
       "EventCreate": {
         "properties": {
           "note": {
@@ -1051,6 +1566,157 @@
         ],
         "title": "JobType"
       },
+      "KeywordMatch": {
+        "properties": {
+          "matched": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matched",
+          "missing"
+        ],
+        "title": "KeywordMatch"
+      },
+      "ProfileRead": {
+        "properties": {
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me"
+          },
+          "resume_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Filename"
+          },
+          "has_resume": {
+            "type": "boolean",
+            "title": "Has Resume"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "about_me",
+          "resume_filename",
+          "has_resume",
+          "updated_at"
+        ],
+        "title": "ProfileRead"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me"
+          }
+        },
+        "type": "object",
+        "title": "ProfileUpdate"
+      },
+      "ResumeReviewRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "review": {
+            "$ref": "#/components/schemas/ATSReview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "review"
+        ],
+        "title": "ResumeReviewRead"
+      },
+      "SectionScores": {
+        "properties": {
+          "skills": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Skills"
+          },
+          "experience": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Experience"
+          },
+          "education": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Education"
+          },
+          "formatting": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Formatting"
+          }
+        },
+        "type": "object",
+        "required": [
+          "skills",
+          "experience",
+          "education",
+          "formatting"
+        ],
+        "title": "SectionScores"
+      },
       "Stats": {
         "properties": {
           "total_applied": {
@@ -1099,6 +1765,34 @@
           "by_status"
         ],
         "title": "Stats"
+      },
+      "SuggestedEdit": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "current": {
+            "type": "string",
+            "title": "Current"
+          },
+          "suggestion": {
+            "type": "string",
+            "title": "Suggestion"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "section",
+          "current",
+          "suggestion",
+          "reason"
+        ],
+        "title": "SuggestedEdit"
       },
       "ValidationError": {
         "properties": {

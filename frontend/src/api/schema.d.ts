@@ -75,6 +75,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Profile */
+        get: operations["read_profile_api_profile_get"];
+        /** Update Profile */
+        put: operations["update_profile_api_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Resume */
+        get: operations["download_resume_api_profile_resume_get"];
+        /** Upload Resume */
+        put: operations["upload_resume_api_profile_resume_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{application_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Review */
+        get: operations["latest_review_api_applications__application_id__review_get"];
+        put?: never;
+        /** Run Review */
+        post: operations["run_review_api_applications__application_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{application_id}/cover-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Letter */
+        get: operations["read_letter_api_applications__application_id__cover_letter_get"];
+        /** Save Letter */
+        put: operations["save_letter_api_applications__application_id__cover_letter_put"];
+        /** Generate Letter */
+        post: operations["generate_letter_api_applications__application_id__cover_letter_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{application_id}/cover-letter.docx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Letter */
+        get: operations["download_letter_api_applications__application_id__cover_letter_docx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -96,6 +186,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ATSReview
+         * @description Structured output the model fills in; also the stored review payload.
+         */
+        ATSReview: {
+            /** Overall Score */
+            overall_score: number;
+            /** Summary */
+            summary: string;
+            keywords: components["schemas"]["KeywordMatch"];
+            section_scores: components["schemas"]["SectionScores"];
+            /** Formatting Issues */
+            formatting_issues: string[];
+            /** Strengths */
+            strengths: string[];
+            /** Gaps */
+            gaps: string[];
+            /** Suggested Edits */
+            suggested_edits: components["schemas"]["SuggestedEdit"][];
+        };
         /** ApplicationCreate */
         ApplicationCreate: {
             /** Job Url */
@@ -234,6 +344,36 @@ export interface components {
             role?: string | null;
             status?: components["schemas"]["ApplicationStatus"] | null;
         };
+        /** Body_upload_resume_api_profile_resume_put */
+        Body_upload_resume_api_profile_resume_put: {
+            /** File */
+            file: string;
+        };
+        /** CoverLetterGenerate */
+        CoverLetterGenerate: {
+            /** Instructions */
+            instructions?: string | null;
+        };
+        /** CoverLetterRead */
+        CoverLetterRead: {
+            /** Content */
+            content: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CoverLetterUpdate */
+        CoverLetterUpdate: {
+            /** Content */
+            content: string;
+        };
         /** EventCreate */
         EventCreate: {
             /** Note */
@@ -268,6 +408,54 @@ export interface components {
          * @enum {string}
          */
         JobType: "graduate_program" | "junior" | "internship" | "other";
+        /** KeywordMatch */
+        KeywordMatch: {
+            /** Matched */
+            matched: string[];
+            /** Missing */
+            missing: string[];
+        };
+        /** ProfileRead */
+        ProfileRead: {
+            /** About Me */
+            about_me: string | null;
+            /** Resume Filename */
+            resume_filename: string | null;
+            /** Has Resume */
+            has_resume: boolean;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ProfileUpdate */
+        ProfileUpdate: {
+            /** About Me */
+            about_me?: string | null;
+        };
+        /** ResumeReviewRead */
+        ResumeReviewRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            review: components["schemas"]["ATSReview"];
+        };
+        /** SectionScores */
+        SectionScores: {
+            /** Skills */
+            skills: number;
+            /** Experience */
+            experience: number;
+            /** Education */
+            education: number;
+            /** Formatting */
+            formatting: number;
+        };
         /** Stats */
         Stats: {
             /** Total Applied */
@@ -286,6 +474,17 @@ export interface components {
             by_status: {
                 [key: string]: number;
             };
+        };
+        /** SuggestedEdit */
+        SuggestedEdit: {
+            /** Section */
+            section: string;
+            /** Current */
+            current: string;
+            /** Suggestion */
+            suggestion: string;
+            /** Reason */
+            reason: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -521,6 +720,306 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Stats"];
+                };
+            };
+        };
+    };
+    read_profile_api_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+        };
+    };
+    update_profile_api_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_resume_api_profile_resume_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+        };
+    };
+    upload_resume_api_profile_resume_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_resume_api_profile_resume_put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_review_api_applications__application_id__review_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeReviewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_review_api_applications__application_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeReviewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_letter_api_applications__application_id__cover_letter_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverLetterRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_letter_api_applications__application_id__cover_letter_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverLetterUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverLetterRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_letter_api_applications__application_id__cover_letter_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverLetterGenerate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverLetterRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_letter_api_applications__application_id__cover_letter_docx_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

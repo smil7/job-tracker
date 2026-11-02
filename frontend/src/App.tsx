@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ApplicationTable } from './components/ApplicationTable'
 import { Board } from './components/Board'
 import { DetailDrawer } from './components/DetailDrawer'
+import { ProfileModal } from './components/ProfileModal'
 import { QuickAddModal } from './components/QuickAddModal'
 import { StatsStrip } from './components/StatsStrip'
 import { useApplications } from './hooks/useApplications'
@@ -23,6 +24,7 @@ export default function App() {
   const [view, setView] = useState<View>(loadView)
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -40,6 +42,7 @@ export default function App() {
       const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select')
       if (e.key === 'Escape') {
         setAdding(false)
+        setEditingProfile(false)
         setOpenId(null)
       } else if (!typing && e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault()
@@ -87,8 +90,14 @@ export default function App() {
             className="w-72 max-w-full rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-stone-500"
           />
           <button
+            onClick={() => setEditingProfile(true)}
+            className="ml-auto rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+          >
+            Profile
+          </button>
+          <button
             onClick={() => setAdding(true)}
-            className="ml-auto rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
           >
             + Add application <kbd className="ml-1 text-xs text-stone-400">N</kbd>
           </button>
@@ -121,7 +130,8 @@ export default function App() {
       </main>
 
       {adding && <QuickAddModal onClose={() => setAdding(false)} />}
-      {openId && <DetailDrawer id={openId} onClose={() => setOpenId(null)} />}
+      {editingProfile && <ProfileModal onClose={() => setEditingProfile(false)} />}
+      {openId && <DetailDrawer id={openId} onClose={() => setOpenId(null)} onOpenProfile={() => setEditingProfile(true)} />}
     </div>
   )
 }

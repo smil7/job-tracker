@@ -5,9 +5,28 @@ import type { ApplicationDetail, Status, StatusEvent } from '../api/types'
 import { useAddNote, useApplication, useDeleteApplication, useUpdateApplication } from '../hooks/useApplications'
 import { fromApplication, toBody } from '../lib/form'
 import { STATUS_META, STATUSES } from '../lib/status'
+import { AiGate } from './AiGate'
+import { CoverLetterPanel } from './CoverLetterPanel'
 import { FormFields, inputClass } from './FormFields'
+import { ResumeReviewPanel } from './ResumeReviewPanel'
 
-export function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
+type Tab = 'details' | 'review' | 'letter'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'details', label: 'Details' },
+  { id: 'review', label: 'Resume review' },
+  { id: 'letter', label: 'Cover letter' },
+]
+
+export function DetailDrawer({
+  id,
+  onClose,
+  onOpenProfile,
+}: {
+  id: string
+  onClose: () => void
+  onOpenProfile: () => void
+}) {
   const { data, isLoading, error } = useApplication(id)
 
   return (
@@ -19,15 +38,24 @@ export function DetailDrawer({ id, onClose }: { id: string; onClose: () => void 
         {isLoading && <p className="p-6 text-sm text-stone-500">Loading…</p>}
         {error && <p className="p-6 text-sm text-rose-600">{error.message}</p>}
         {/* key resets the form when the drawer switches to another application */}
-        {data && <DrawerBody key={data.id} application={data} onClose={onClose} />}
+        {data && <DrawerBody key={data.id} application={data} onClose={onClose} onOpenProfile={onOpenProfile} />}
       </aside>
     </div>
   )
 }
 
-function DrawerBody({ application, onClose }: { application: ApplicationDetail; onClose: () => void }) {
+function DrawerBody({
+  application,
+  onClose,
+  onOpenProfile,
+}: {
+  application: ApplicationDetail
+  onClose: () => void
+  onOpenProfile: () => void
+}) {
   const update = useUpdateApplication()
   const remove = useDeleteApplication()
+  const [tab, setTab] = useState<Tab>('details')
   const [form, setForm] = useState(() => fromApplication(application))
   const dirty = JSON.stringify(form) !== JSON.stringify(fromApplication(application))
 
@@ -85,24 +113,52 @@ function DrawerBody({ application, onClose }: { application: ApplicationDetail; 
         </button>
       </header>
 
-      <form onSubmit={save} className="px-6 py-5">
-        <FormFields form={form} onChange={setForm} />
-        {update.error && <p className="mt-3 text-sm text-rose-600">{update.error.message}</p>}
-        <div className="mt-4 flex items-center gap-2">
-          <button type="button" onClick={destroy} className="text-sm text-rose-600 hover:text-rose-800">
-            Delete
-          </button>
+      <nav className="flex gap-1 border-b border-stone-200 px-6">
+        {TABS.map((t) => (
           <button
-            type="submit"
-            disabled={!dirty || update.isPending}
-            className="ml-auto rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40"
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+              tab === t.id ? 'border-stone-900 font-medium text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
           >
-            Save changes
+            {t.label}
           </button>
-        </div>
-      </form>
+        ))}
+      </nav>
 
-      <Timeline applicationId={application.id} events={application.events} />
+      {tab === 'details' && (
+        <>
+          <form onSubmit={save} className="px-6 py-5">
+            <FormFields form={form} onChange={setForm} />
+            {update.error && <p className="mt-3 text-sm text-rose-600">{update.error.message}</p>}
+            <div className="mt-4 flex items-center gap-2">
+              <button type="button" onClick={destroy} className="text-sm text-rose-600 hover:text-rose-800">
+                Delete
+              </button>
+              <button
+                type="submit"
+                disabled={!dirty || update.isPending}
+                className="ml-auto rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40"
+              >
+                Save changes
+              </button>
+            </div>
+          </form>
+
+          <Timeline applicationId={application.id} events={application.events} />
+        </>
+      )}
+      {tab === 'review' && (
+        <AiGate application={application} onOpenProfile={onOpenProfile}>
+          <ResumeReviewPanel applicationId={application.id} />
+        </AiGate>
+      )}
+      {tab === 'letter' && (
+        <AiGate application={application} onOpenProfile={onOpenProfile}>
+          <CoverLetterPanel applicationId={application.id} />
+        </AiGate>
+      )}
     </>
   )
 }

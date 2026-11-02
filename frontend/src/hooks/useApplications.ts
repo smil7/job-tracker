@@ -94,3 +94,107 @@ export function useAddNote() {
     onSuccess: (_event, { id }) => queryClient.invalidateQueries({ queryKey: keys.detail(id) }),
   })
 }
+
+const aiKeys = {
+  profile: ['profile'] as const,
+  review: (id: string) => ['applications', id, 'review'] as const,
+  letter: (id: string) => ['applications', id, 'cover-letter'] as const,
+}
+
+export function useProfile() {
+  return useQuery({
+    queryKey: aiKeys.profile,
+    queryFn: async () => unwrap(await api.GET('/api/profile')),
+  })
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (about_me: string | null) => unwrap(await api.PUT('/api/profile', { body: { about_me } })),
+    onSuccess: (profile) => queryClient.setQueryData(aiKeys.profile, profile),
+  })
+}
+
+export function useUploadResume() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: File) =>
+      unwrap(
+        await api.PUT('/api/profile/resume', {
+          // The generated type says `string`, but the wire format is a multipart file
+          body: { file } as unknown as { file: string },
+          bodySerializer: () => {
+            const data = new FormData()
+            data.append('file', file)
+            return data
+          },
+        }),
+      ),
+    onSuccess: (profile) => queryClient.setQueryData(aiKeys.profile, profile),
+  })
+}
+
+/** The latest review, or null when none has been run yet (the API answers 404). */
+export function useResumeReview(id: string) {
+  return useQuery({
+    queryKey: aiKeys.review(id),
+    queryFn: async () => {
+      const result = await api.GET('/api/applications/{application_id}/review', {
+        params: { path: { application_id: id } },
+      })
+      if (result.response.status === 404) return null
+      return unwrap(result)
+    },
+  })
+}
+
+export function useRunReview(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(await api.POST('/api/applications/{application_id}/review', { params: { path: { application_id: id } } })),
+    onSuccess: (review) => queryClient.setQueryData(aiKeys.review(id), review),
+  })
+}
+
+export function useCoverLetter(id: string) {
+  return useQuery({
+    queryKey: aiKeys.letter(id),
+    queryFn: async () => {
+      const result = await api.GET('/api/applications/{application_id}/cover-letter', {
+        params: { path: { application_id: id } },
+      })
+      if (result.response.status === 404) return null
+      return unwrap(result)
+    },
+  })
+}
+
+export function useGenerateCoverLetter(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (instructions: string | null) =>
+      unwrap(
+        await api.POST('/api/applications/{application_id}/cover-letter', {
+          params: { path: { application_id: id } },
+          body: { instructions },
+        }),
+      ),
+    onSuccess: (letter) => queryClient.setQueryData(aiKeys.letter(id), letter),
+  })
+}
+
+export function useSaveCoverLetter(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (content: string) =>
+      unwrap(
+        await api.PUT('/api/applications/{application_id}/cover-letter', {
+          params: { path: { application_id: id } },
+          body: { content },
+        }),
+      ),
+    onSuccess: (letter) => queryClient.setQueryData(aiKeys.letter(id), letter),
+  })
+}
