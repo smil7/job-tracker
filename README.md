@@ -6,6 +6,9 @@ A simple personal tracker for job applications (graduate programs and junior rol
 - **Table**: sortable list of everything
 - **Detail drawer**: edit fields, keep the job description, add timeline notes ("Recruiter called")
 - **Stats**: applied, this week, active, interviews, offers, response rate
+- **Profile**: upload your resume (PDF) and an "About me" note, used by the AI tools below
+- **Resume review**: scores your resume against an application's job description the way an ATS would (keywords, section scores, formatting risks, suggested edits)
+- **Cover letter**: drafts a letter for the role from your resume and profile; edit it in the app and download it as `.docx`
 - Shortcuts: `N` new application · `/` search · `Esc` close
 
 ## Stack
@@ -15,6 +18,7 @@ A simple personal tracker for job applications (graduate programs and junior rol
 | Frontend | React 19 + TypeScript, Vite, Tailwind CSS 4, TanStack Query, dnd-kit |
 | Backend  | Python 3.13, FastAPI, SQLAlchemy 2 (async), Alembic, uv            |
 | Database | PostgreSQL 16 (Docker Compose, host port **5433**)                 |
+| AI       | [OpenRouter](https://openrouter.ai) via the `openai` SDK (default model `anthropic/claude-sonnet-5.5`) |
 
 ## Prerequisites
 
@@ -39,7 +43,12 @@ cd frontend && npm install && npm run dev
 - App: http://localhost:5173
 - API docs (Swagger): http://localhost:8000/docs
 
-Copy `.env.example` to `backend/.env` if you need to change the database URL.
+Copy `.env.example` to `backend/.env` to change the database URL or configure the AI features:
+
+- `OPENROUTER_API_KEY`: required for resume review and cover letters (the rest of the app works without it)
+- `LLM_MODEL`: any OpenRouter model id, default `anthropic/claude-sonnet-5.5`
+
+Each review or letter is one model call, billed to your OpenRouter credits.
 
 ## Tests
 
@@ -47,7 +56,7 @@ Copy `.env.example` to `backend/.env` if you need to change the database URL.
 cd backend && uv run pytest
 ```
 
-Tests run against a separate `jobtracker_test` database, which Docker creates on first start.
+Tests run against a separate `jobtracker_test` database, which Docker creates on first start. The AI tests use a fake model, so they never call OpenRouter.
 
 ## API
 
@@ -62,6 +71,18 @@ All routes live under `/api`:
 | DELETE | `/applications/{id}`              | Delete                                          |
 | POST   | `/applications/{id}/events`       | Add a timeline note                             |
 | GET    | `/stats`                          | Dashboard numbers                               |
+| GET    | `/profile`                        | Your about-me text and resume status            |
+| PUT    | `/profile`                        | Update the about-me text                        |
+| PUT    | `/profile/resume`                 | Upload the resume (PDF, up to 5 MB)             |
+| GET    | `/profile/resume`                 | Download the stored resume                      |
+| POST   | `/applications/{id}/review`       | Run an ATS-style resume review                  |
+| GET    | `/applications/{id}/review`       | Latest review (404 if none)                     |
+| POST   | `/applications/{id}/cover-letter` | Generate a letter (optional `instructions`)     |
+| GET    | `/applications/{id}/cover-letter` | Read the saved letter                           |
+| PUT    | `/applications/{id}/cover-letter` | Save your edits                                 |
+| GET    | `/applications/{id}/cover-letter.docx` | Download the letter as Word                |
+
+The review and cover letter calls return 400 until a resume is uploaded and the application has a job description.
 
 After changing the API, regenerate the frontend types:
 
@@ -73,5 +94,5 @@ cd frontend && npm run gen:api
 
 - Paste a job link and have an LLM fill in company, role and description
 - Follow-up and deadline reminders
-- CV / cover letter versions per application
+- Keep several cover letter versions per application
 - An agent that applies for you, using this API as its tools
