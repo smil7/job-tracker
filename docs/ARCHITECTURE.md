@@ -36,7 +36,7 @@ flowchart LR
 | FastAPI  | The REST API under `/api`. All business rules live here. | `uv run uvicorn app.main:app --reload --port 8000` |
 | Vite     | Serves the React app and forwards every `/api/*` request to port 8000, so the browser only ever talks to one origin. | `npm run dev` |
 
-`start.bat` runs all three in order: start Postgres, apply migrations (`alembic upgrade head`), then open the API and the web app in their own windows.
+`task dev` (see `Taskfile.yml`) runs all three in order: start Postgres, apply migrations (`alembic upgrade head`), then run the API and the web app side by side in one terminal. It works on any OS. `start.bat` does the same on Windows without Task, opening each server in its own window.
 
 OpenRouter is only called by the two AI features (resume review and cover letter). The rest of the app works without an API key.
 
@@ -44,7 +44,8 @@ OpenRouter is only called by the two AI features (resume review and cover letter
 
 ```
 job-tracker/
-├── start.bat                 one-click start (Windows)
+├── Taskfile.yml              task runner: `task dev`, `task test`, `task check`, ...
+├── start.bat                 one-click start (Windows, no Task needed)
 ├── docker-compose.yml        Postgres container, port 5433, pgdata volume
 ├── docker/init-test-db.sql   creates the jobtracker_test database on first start
 ├── backend/

@@ -1,0 +1,157 @@
+# Task runner for Job Tracker: https://taskfile.dev
+# Install: winget install Task.Task  |  brew install go-task  |  npm i -g @go-task/cli
+# Run `task` to list everything. Works the same on Windows, macOS and Linux.
+
+version: '3'
+
+# Prefix each line with the task name, so API and web output are easy to tell apart in `task dev`
+output: prefixed
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # ---------- setup ----------
+
+  setup:
+    desc: Install backend and frontend dependencies and create backend/.env
+    cmds:
+      - task: env
+      - task: setup:backend
+      - task: setup:frontend
+
+  env:
+    internal: true
+    status:
+      - test -f backend/.env
+    cmds:
+      - cp .env.example backend/.env
+      - echo "Created backend/.env from .env.example (add OPENROUTER_API_KEY for the AI features)"
+
+  setup:backend:
+    internal: true
+    dir: backend
+    cmds:
+      - uv sync
+
+  setup:frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - npm install
+
+  # Only installs when node_modules is missing, like start.bat did
+  frontend:deps:
+    internal: true
+    dir: frontend
+    status:
+      - test -d node_modules
+    cmds:
+      - npm install
+
+  # ---------- running ----------
+
+  dev:
+    desc: Start Postgres, apply migrations, then run the API and web app together (Ctrl+C stops both)
+    cmds:
+      - task: migrate
+      - task: serve
+
+  serve:
+    internal: true
+    deps: [api, web]
+
+  api:
+    desc: Run the FastAPI server with auto-reload on :8000
+    dir: backend
+    cmds:
+      - uv run uvicorn app.main:app --reload --port 8000
+
+  web:
+    desc: Run the Vite dev server on :5173
+    dir: frontend
+    deps: [frontend:deps]
+    cmds:
+      - npm run dev
+
+  # ---------- database ----------
+
+  db:
+    desc: Start Postgres in Docker (host port 5433) and wait until it's healthy
+    cmds:
+      - docker compose up -d --wait
+
+  db:stop:
+    desc: Stop Postgres (data is kept in the pgdata volume)
+    cmds:
+      - docker compose down
+
+  db:shell:
+    desc: Open psql in the database container
+    interactive: true
+    cmds:
+      - docker compose exec db psql -U jobtracker -d jobtracker
+
+  migrate:
+    desc: Apply database migrations
+    deps: [db]
+    dir: backend
+    cmds:
+      - uv run alembic upgrade head
+
+  migrate:check:
+    desc: Fail if models.py has changes that no migration covers
+    dir: backend
+    cmds:
+      - uv run alembic check
+
+  migration:
+    desc: 'Create a migration from model changes, e.g. task migration -- "add salary range"'
+    dir: backend
+    preconditions:
+      - sh: test -n "{{.CLI_ARGS}}"
+        msg: 'Give a message, e.g. task migration -- "add salary range"'
+    cmds:
+      - uv run alembic revision --autogenerate -m "{{.CLI_ARGS}}"
+      - echo "Review the generated file in backend/alembic/versions/ before applying it"
+
+  # ---------- checks ----------
+
+  test:
+    desc: Run the backend tests (starts Postgres if needed)
+    deps: [db]
+    dir: backend
+    cmds:
+      - uv run pytest {{.CLI_ARGS}}
+
+  lint:
+    desc: Lint the frontend
+    dir: frontend
+    deps: [frontend:deps]
+    cmds:
+      - npm run lint
+
+  build:
+    desc: Type check and build the frontend
+    dir: frontend
+    deps: [frontend:deps]
+    cmds:
+      - npm run build
+
+  gen:api:
+    desc: Regenerate backend/openapi.json and frontend/src/api/schema.d.ts (run after API changes)
+    dir: frontend
+    cmds:
+      - npm run gen:api
+
+  check:
+    desc: Run the same checks as CI (migrations, tests, lint, build)
+    cmds:
+      - task: migrate
+      - task: migrate:check
+      - task: test
+      - task: lint
+      - task: build

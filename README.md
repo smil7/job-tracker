@@ -24,11 +24,36 @@ New to the codebase? Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), th
 
 ## Prerequisites
 
-Docker Desktop, [uv](https://docs.astral.sh/uv/) and Node 22+.
+Docker Desktop, [uv](https://docs.astral.sh/uv/), Node 22+ and, optionally, [Task](https://taskfile.dev) for the shortcuts below:
+
+```bash
+winget install Task.Task      # Windows
+brew install go-task          # macOS
+npm install -g @go-task/cli   # anywhere with Node
+```
 
 ## Run it
 
-Double-click `start.bat`, or step by step:
+```bash
+task setup   # first time: installs dependencies, creates backend/.env
+task dev     # starts Postgres, applies migrations, runs the API and web app (Ctrl+C stops both)
+```
+
+Run `task` on its own to list every command. The ones you'll use most:
+
+| Command | What it does |
+| ------- | ------------ |
+| `task dev` | Everything, in one terminal |
+| `task api` / `task web` | Just the backend or the frontend |
+| `task db` / `task db:stop` | Start or stop Postgres |
+| `task db:shell` | psql in the database container |
+| `task migrate` | Apply migrations |
+| `task migration -- "message"` | New migration from model changes |
+| `task test` | Backend tests (pass pytest args after `--`, e.g. `task test -- -k stats`) |
+| `task gen:api` | Regenerate the frontend API types |
+| `task check` | Same checks as CI: migrations, tests, lint, build |
+
+Without Task, double-click `start.bat` on Windows, or run the steps by hand:
 
 ```bash
 docker compose up -d --wait
@@ -55,7 +80,7 @@ Each review or letter is one model call, billed to your OpenRouter credits.
 ## Tests
 
 ```bash
-cd backend && uv run pytest
+task test                     # or: cd backend && uv run pytest
 ```
 
 Tests run against a separate `jobtracker_test` database, which Docker creates on first start. The AI tests use a fake model, so they never call OpenRouter.
