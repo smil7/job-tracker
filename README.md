@@ -58,6 +58,8 @@ cd backend && uv run pytest
 
 Tests run against a separate `jobtracker_test` database, which Docker creates on first start. The AI tests use a fake model, so they never call OpenRouter.
 
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request. It applies the migrations, runs the backend tests, lints and builds the frontend, and fails if `openapi.json` or `schema.d.ts` is out of date (fix that with `npm run gen:api`).
+
 ## API
 
 All routes live under `/api`:

@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch or PR cancels the run still in progress
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jobtracker
+          POSTGRES_PASSWORD: jobtracker
+          POSTGRES_DB: jobtracker
+        # Same host port as docker-compose.yml, so the defaults in app/config.py work unchanged
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U jobtracker -d jobtracker"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      # Locally docker/init-test-db.sql does this; service containers can't mount repo files
+      - name: Create test database
+        run: psql -h localhost -p 5433 -U jobtracker -d jobtracker -c "CREATE DATABASE jobtracker_test"
+        env:
+          PGPASSWORD: jobtracker
+
+      # The tests build their schema from the models, so this is what checks the migrations
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+
+      - name: Check migrations match the models
+        run: uv run alembic check
+
+      - name: Run tests
+        run: uv run pytest
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check and build
+        run: npm run build
+
+  api-types:
+    name: API types up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+
+      - name: Regenerate OpenAPI spec and frontend types
+        working-directory: frontend
+        run: npm run gen:api
+
+      - name: Fail if the committed files are stale
+        run: |
+          if ! git diff --exit-code -- backend/openapi.json frontend/src/api/schema.d.ts; then
+            echo "::error::API types are out of date. Run 'npm run gen:api' in frontend/ and commit the result."
+            exit 1
+          fi
