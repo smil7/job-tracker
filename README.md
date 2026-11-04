@@ -11,6 +11,8 @@ A simple personal tracker for job applications (graduate programs and junior rol
 - **Cover letter**: drafts a letter for the role from your resume and profile; edit it in the app and download it as `.docx`
 - Shortcuts: `N` new application · `/` search · `Esc` close
 
+New to the codebase? Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), then [docs/BACKEND.md](docs/BACKEND.md) and [docs/FRONTEND.md](docs/FRONTEND.md).
+
 ## Stack
 
 | Layer    | Tech                                                              |
