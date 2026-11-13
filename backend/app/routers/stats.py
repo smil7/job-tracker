@@ -5,7 +5,8 @@ from datetime import date, timedelta
 from fastapi import APIRouter
 from sqlalchemy import func, select
 
-from app.models import Application, ApplicationStatus, StatusEvent
+from app.auth import CurrentUser
+from app.models import Application, ApplicationStatus, StatusEvent, User
 from app.routers.applications import Session
 from app.schemas import Stats
 
@@ -21,7 +22,7 @@ INTERVIEWED = {S.INTERVIEW, S.OFFER}
 RANK = {S.WISHLIST: 0, S.APPLIED: 1, S.ASSESSMENT: 2, S.INTERVIEW: 3, S.OFFER: 4, S.REJECTED: 5, S.WITHDRAWN: 5}
 
 
-async def _stages_reached(session: Session) -> dict[uuid.UUID, set[ApplicationStatus]]:
+async def _stages_reached(session: Session, user: User) -> dict[uuid.UUID, set[ApplicationStatus]]:
     """Stages each application has genuinely reached, replayed from its history.
 
     Moving forward keeps earlier stages (interviewed then rejected still counts as an
@@ -30,7 +31,8 @@ async def _stages_reached(session: Session) -> dict[uuid.UUID, set[ApplicationSt
     """
     rows = await session.execute(
         select(StatusEvent.application_id, StatusEvent.from_status, StatusEvent.to_status)
-        .where(StatusEvent.to_status.is_not(None))
+        .join(Application, Application.id == StatusEvent.application_id)
+        .where(StatusEvent.to_status.is_not(None), Application.user_id == user.id)
         .order_by(StatusEvent.application_id, StatusEvent.occurred_at)
     )
     reached: dict[uuid.UUID, set[ApplicationStatus]] = defaultdict(set)
@@ -43,19 +45,22 @@ async def _stages_reached(session: Session) -> dict[uuid.UUID, set[ApplicationSt
 
 
 @router.get("", response_model=Stats)
-async def get_stats(session: Session):
+async def get_stats(session: Session, user: CurrentUser):
     rows = await session.execute(
-        select(Application.status, func.count()).group_by(Application.status)
+        select(Application.status, func.count())
+        .where(Application.user_id == user.id)
+        .group_by(Application.status)
     )
     by_status = {s: 0 for s in ApplicationStatus}
     by_status.update({s: n for s, n in rows.all()})
 
     total_applied = sum(n for s, n in by_status.items() if s != S.WISHLIST)
-    reached = (await _stages_reached(session)).values()
+    reached = (await _stages_reached(session, user)).values()
     responded = sum(1 for stages in reached if stages & RESPONDED)
     week_ago = date.today() - timedelta(days=7)
     applied_this_week = await session.scalar(
         select(func.count()).where(
+            Application.user_id == user.id,
             Application.applied_at >= week_ago,
             Application.status != S.WISHLIST,
         )

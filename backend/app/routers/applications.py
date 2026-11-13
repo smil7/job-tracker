@@ -7,8 +7,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import CurrentUser
 from app.db import get_session
-from app.models import Application, ApplicationStatus, StatusEvent
+from app.models import Application, ApplicationStatus, StatusEvent, User
 from app.schemas import (
     ApplicationCreate,
     ApplicationDetail,
@@ -31,10 +32,13 @@ SORTS = {
 }
 
 
-async def _get_detail(session: AsyncSession, application_id: uuid.UUID) -> Application:
+async def _get_detail(
+    session: AsyncSession, application_id: uuid.UUID, user: User
+) -> Application:
+    """The application, if it exists and belongs to the user. Otherwise 404 (never 403)."""
     result = await session.execute(
         select(Application)
-        .where(Application.id == application_id)
+        .where(Application.id == application_id, Application.user_id == user.id)
         .options(selectinload(Application.events))
         .execution_options(populate_existing=True)
     )
@@ -53,11 +57,12 @@ def _fill_applied_date(application: Application) -> None:
 @router.get("", response_model=list[ApplicationRead])
 async def list_applications(
     session: Session,
+    user: CurrentUser,
     status_filter: Annotated[list[ApplicationStatus] | None, Query(alias="status")] = None,
     q: str | None = None,
     sort: Literal["updated", "applied", "applied_asc", "company", "deadline"] = "updated",
 ):
-    stmt = select(Application).order_by(SORTS[sort])
+    stmt = select(Application).where(Application.user_id == user.id).order_by(SORTS[sort])
     if status_filter:
         stmt = stmt.where(Application.status.in_(status_filter))
     if q:
@@ -73,25 +78,25 @@ async def list_applications(
 
 
 @router.post("", response_model=ApplicationDetail, status_code=status.HTTP_201_CREATED)
-async def create_application(payload: ApplicationCreate, session: Session):
-    application = Application(**payload.model_dump())
+async def create_application(payload: ApplicationCreate, session: Session, user: CurrentUser):
+    application = Application(**payload.model_dump(), user_id=user.id)
     _fill_applied_date(application)
     application.events = [StatusEvent(to_status=application.status, note="Added")]
     session.add(application)
     await session.commit()
-    return await _get_detail(session, application.id)
+    return await _get_detail(session, application.id, user)
 
 
 @router.get("/{application_id}", response_model=ApplicationDetail)
-async def get_application(application_id: uuid.UUID, session: Session):
-    return await _get_detail(session, application_id)
+async def get_application(application_id: uuid.UUID, session: Session, user: CurrentUser):
+    return await _get_detail(session, application_id, user)
 
 
 @router.patch("/{application_id}", response_model=ApplicationDetail)
 async def update_application(
-    application_id: uuid.UUID, payload: ApplicationUpdate, session: Session
+    application_id: uuid.UUID, payload: ApplicationUpdate, session: Session, user: CurrentUser
 ):
-    application = await _get_detail(session, application_id)
+    application = await _get_detail(session, application_id, user)
     changes = payload.model_dump(exclude_unset=True)
     new_status = changes.pop("status", None)
 
@@ -108,12 +113,12 @@ async def update_application(
         _fill_applied_date(application)
 
     await session.commit()
-    return await _get_detail(session, application_id)
+    return await _get_detail(session, application_id, user)
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_application(application_id: uuid.UUID, session: Session):
-    application = await _get_detail(session, application_id)
+async def delete_application(application_id: uuid.UUID, session: Session, user: CurrentUser):
+    application = await _get_detail(session, application_id, user)
     await session.delete(application)
     await session.commit()
 
@@ -121,8 +126,10 @@ async def delete_application(application_id: uuid.UUID, session: Session):
 @router.post(
     "/{application_id}/events", response_model=EventRead, status_code=status.HTTP_201_CREATED
 )
-async def add_event(application_id: uuid.UUID, payload: EventCreate, session: Session):
-    application = await _get_detail(session, application_id)
+async def add_event(
+    application_id: uuid.UUID, payload: EventCreate, session: Session, user: CurrentUser
+):
+    application = await _get_detail(session, application_id, user)
     event = StatusEvent(application_id=application.id, note=payload.note)
     if payload.occurred_at is not None:
         event.occurred_at = payload.occurred_at

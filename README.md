@@ -89,7 +89,9 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and eve
 
 ## API
 
-All routes live under `/api`:
+All routes live under `/api`. Every route except `/health` needs a login (`Authorization: Bearer <token>`). Locally, `AUTH_DISABLED=true` in `backend/.env` skips it.
+
+See `docs/features/` for how login and per-user data work.
 
 | Method | Path                              | Purpose                                         |
 | ------ | --------------------------------- | ----------------------------------------------- |
@@ -100,6 +102,8 @@ All routes live under `/api`:
 | DELETE | `/applications/{id}`              | Delete                                          |
 | POST   | `/applications/{id}/events`       | Add a timeline note                             |
 | GET    | `/stats`                          | Dashboard numbers                               |
+| GET    | `/me`                             | The logged-in user                              |
+| DELETE | `/me`                             | Delete your account and all your data           |
 | GET    | `/profile`                        | Your about-me text and resume status            |
 | PUT    | `/profile`                        | Update the about-me text                        |
 | PUT    | `/profile/resume`                 | Upload the resume (PDF, up to 5 MB)             |
