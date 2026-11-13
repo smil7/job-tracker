@@ -133,3 +133,11 @@ class CoverLetterRead(BaseModel):
     content: str
     generated_at: datetime
     updated_at: datetime
+
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: str | None
+    created_at: datetime

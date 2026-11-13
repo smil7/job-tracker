@@ -35,6 +35,19 @@ status_enum = _pg_enum(ApplicationStatus, "application_status")
 job_type_enum = _pg_enum(JobType, "job_type")
 
 
+class User(Base):
+    """A person who can log in. One row per Cognito account, matched by the token's `sub`."""
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    cognito_sub: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(320))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class Application(Base):
     __tablename__ = "applications"
 
