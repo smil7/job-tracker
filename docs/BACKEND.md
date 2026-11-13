@@ -47,7 +47,7 @@ There's no separate "service" or "repository" layer for the normal CRUD: routers
 
 | File | Responsibility |
 | ---- | -------------- |
-| `config.py` | `Settings` (pydantic-settings) read from `backend/.env`: `database_url`, `test_database_url`, `cors_origins`, `openrouter_api_key`, `llm_base_url`, `llm_model`. Imported as the `settings` singleton. |
+| `config.py` | `Settings` (pydantic-settings) read from `backend/.env`: `database_url`, `test_database_url`, `cors_origins`, `openrouter_api_key`, `llm_base_url`, `llm_model`, and the login settings (`auth_disabled`, `environment`, `cognito_*`). See `docs/features/01-login-token-check.md`. Imported as the `settings` singleton. |
 | `db.py` | `Base` (declarative base), the async `engine`, `SessionLocal`, and `get_session()`, the FastAPI dependency that yields one `AsyncSession` per request. |
 | `models.py` | Tables and enums. See [Data model](#data-model). |
 | `schemas.py` | Pydantic models for request bodies and responses. These shape the OpenAPI spec and therefore the frontend types. |
@@ -103,8 +103,14 @@ erDiagram
         text note
         timestamptz occurred_at
     }
+    users {
+        uuid id PK
+        varchar cognito_sub UK "id from Cognito"
+        varchar email "can be empty"
+        timestamptz created_at
+    }
     profile {
-        int id PK "always 1"
+        uuid user_id PK, FK "CASCADE, one row per user"
         bytea resume_pdf
         varchar resume_filename
         text about_me
@@ -125,6 +131,8 @@ erDiagram
         timestamptz updated_at
     }
 
+    users ||--o{ applications : owns
+    users ||--o| profile : has
     applications ||--o{ status_events : has
     applications ||--o{ resume_reviews : has
     applications ||--o| cover_letters : has
@@ -142,7 +150,7 @@ Things worth knowing:
   | Plain note | `null` | `null` | the text |
 
 - `Application.events` is ordered newest first (`order_by=occurred_at.desc()`), which is the order the timeline shows.
-- **Profile is a singleton.** `routers/profile.py:get_profile()` loads row `id=1` and creates it empty on first use. It's a plain helper, not a FastAPI dependency, so `ai.py` can call it too.
+- **Profile is one row per user.** `routers/profile.py:get_profile(session, user)` loads the row of the user and creates it empty on first use. It's a plain helper, not a FastAPI dependency, so `ai.py` can call it too.
 - **Reviews are history, letters are not.** Every review run inserts a new row (`GET /review` returns the latest). A cover letter is one row per application (`UNIQUE`), overwritten on regenerate.
 - The resume is stored in the database (`bytea`), capped at 5 MB.
 
@@ -152,6 +160,8 @@ Alembic, in `backend/alembic/versions/`:
 
 - `0001_initial.py`: `applications`, `status_events`, both enum types
 - `0002_ai_features.py`: `profile`, `resume_reviews`, `cover_letters`
+- `0003_add_users.py`: `users`
+- `0004_data_per_user.py`: `user_id` on `applications` and `profile`. Old rows go to the dev user.
 
 To change the schema: edit `models.py`, run `uv run alembic revision --autogenerate -m "..."`, **read the generated file** (autogenerate misses enum value changes), then `uv run alembic upgrade head`.
 

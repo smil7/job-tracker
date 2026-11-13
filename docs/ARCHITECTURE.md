@@ -7,7 +7,7 @@ Start here. This page explains how the pieces of Job Tracker fit together and fo
 
 ## The big picture
 
-Job Tracker is a single-user app with three running processes and one external service.
+Job Tracker has three running processes and one external service. Each person logs in (Cognito) and sees only their own data. Locally, `AUTH_DISABLED=true` skips the login and uses one dev user.
 
 ```mermaid
 flowchart LR
@@ -93,7 +93,8 @@ Because `openapi-fetch` is typed from `schema.d.ts`, a wrong path, a missing par
 - Stages: `wishlist → applied → assessment → interview → offer`, plus two closed stages `rejected` and `withdrawn`.
 - Every status change writes a **StatusEvent**. Plain notes ("Recruiter called") are also StatusEvents, just without a `to_status`. Together they form the application's **timeline**.
 - **Stats** (interviews, response rate) are computed by replaying the event history, so an application that reached Interview and was then Rejected still counts as an interview.
-- The **Profile** is a single row holding your resume PDF and an "about me" note. The AI features send these, plus an application's job description, to the model.
+- A **User** is one person who can log in. Each Application and each Profile belongs to one user, and every route shows only the rows of the caller.
+- The **Profile** is one row per user. It holds the resume PDF and an "about me" note. The AI features send these, plus an application's job description, to the model.
 - A **ResumeReview** is a stored ATS-style score for one application (you can run it many times; the latest is shown). A **CoverLetter** is one editable letter per application.
 
 ```mermaid
@@ -101,8 +102,10 @@ erDiagram
     APPLICATION ||--o{ STATUS_EVENT : "timeline"
     APPLICATION ||--o{ RESUME_REVIEW : "reviews"
     APPLICATION ||--o| COVER_LETTER : "letter"
+    USER ||--o{ APPLICATION : "owns"
+    USER ||--o| PROFILE : "has"
     PROFILE {
-        int id "always 1"
+        uuid user_id "one row per user"
         bytes resume_pdf
         text about_me
     }

@@ -12,6 +12,11 @@
         ],
         "summary": "List Applications",
         "operationId": "list_applications_api_applications_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "status",
@@ -99,6 +104,11 @@
         ],
         "summary": "Create Application",
         "operationId": "create_application_api_applications_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -140,6 +150,11 @@
         ],
         "summary": "Get Application",
         "operationId": "get_application_api_applications__application_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -181,6 +196,11 @@
         ],
         "summary": "Update Application",
         "operationId": "update_application_api_applications__application_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -232,6 +252,11 @@
         ],
         "summary": "Delete Application",
         "operationId": "delete_application_api_applications__application_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -268,6 +293,11 @@
         ],
         "summary": "Add Event",
         "operationId": "add_event_api_applications__application_id__events_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -332,7 +362,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/profile": {
@@ -353,7 +388,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -392,7 +432,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/profile/resume": {
@@ -409,7 +454,12 @@
               "application/pdf": {}
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -448,7 +498,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/applications/{application_id}/review": {
@@ -458,6 +513,11 @@
         ],
         "summary": "Run Review",
         "operationId": "run_review_api_applications__application_id__review_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -499,6 +559,11 @@
         ],
         "summary": "Latest Review",
         "operationId": "latest_review_api_applications__application_id__review_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -542,6 +607,11 @@
         ],
         "summary": "Generate Letter",
         "operationId": "generate_letter_api_applications__application_id__cover_letter_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -593,6 +663,11 @@
         ],
         "summary": "Read Letter",
         "operationId": "read_letter_api_applications__application_id__cover_letter_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -634,6 +709,11 @@
         ],
         "summary": "Save Letter",
         "operationId": "save_letter_api_applications__application_id__cover_letter_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -687,6 +767,11 @@
         ],
         "summary": "Download Letter",
         "operationId": "download_letter_api_applications__application_id__cover_letter_docx_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "application_id",
@@ -736,6 +821,24 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Delete Me",
+        "description": "Delete the user and all of their data. The database cascades to every child row.",
+        "operationId": "delete_me_api_me_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           }
         },
         "security": [
