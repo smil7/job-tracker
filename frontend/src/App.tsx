@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSession } from './auth/session'
 import { ApplicationTable } from './components/ApplicationTable'
 import { Board } from './components/Board'
 import { DetailDrawer } from './components/DetailDrawer'
@@ -20,6 +21,7 @@ function loadView(): View {
 }
 
 export default function App() {
+  const { email, logout } = useSession()
   const { data: applications = [], isLoading, error } = useApplications()
   const [view, setView] = useState<View>(loadView)
   const [search, setSearch] = useState('')
@@ -95,6 +97,14 @@ export default function App() {
           >
             Profile
           </button>
+          {email && (
+            <span className="flex items-center gap-2 text-sm text-stone-500">
+              {email}
+              <button onClick={logout} className="rounded-lg border border-stone-300 px-3 py-1.5 text-stone-700 hover:bg-stone-100">
+                Log out
+              </button>
+            </span>
+          )}
           <button
             onClick={() => setAdding(true)}
             className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
