@@ -35,10 +35,27 @@ status_enum = _pg_enum(ApplicationStatus, "application_status")
 job_type_enum = _pg_enum(JobType, "job_type")
 
 
+class User(Base):
+    """A person who can log in. One row per Cognito account, matched by the token's `sub`."""
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    cognito_sub: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(320))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # Deleting a user deletes their applications (and, through these, events, reviews, letters)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
     company: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(200))
     job_url: Mapped[str | None] = mapped_column(String(2000))
@@ -94,11 +111,13 @@ class StatusEvent(Base):
 
 
 class Profile(Base):
-    """Single-row table: the resume and background used by the AI features."""
+    """One row per user: the resume and background used by the AI features."""
 
     __tablename__ = "profile"
 
-    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     resume_pdf: Mapped[bytes | None] = mapped_column(LargeBinary)
     resume_filename: Mapped[str | None] = mapped_column(String(255))
     about_me: Mapped[str | None] = mapped_column(Text)
