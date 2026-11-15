@@ -1,4 +1,6 @@
 import base64
+import logging
+import time
 from typing import Any
 
 from openai import APIConnectionError, APIStatusError, AsyncOpenAI, RateLimitError
@@ -8,6 +10,8 @@ from app.config import settings
 from app.llm.prompts import ATS_REVIEWER, COVER_LETTER_WRITER
 from app.models import Application, Profile
 from app.schemas import ATSReview
+
+logger = logging.getLogger(__name__)
 
 
 class LLMError(Exception):
@@ -64,15 +68,42 @@ def _wrap(exc: Exception) -> LLMError:
     return LLMError(502, "The AI service returned an error.")
 
 
-async def _complete(llm: AsyncOpenAI, messages: list[dict[str, Any]], **extra: Any) -> str:
-    """One chat completion; returns the text or raises LLMError."""
+async def _complete(
+    llm: AsyncOpenAI, messages: list[dict[str, Any]], task: str, **extra: Any
+) -> str:
+    """One chat completion; returns the text or raises LLMError.
+
+    It logs the start and the end of the call. It never logs the messages (they hold the resume).
+    """
+    logger.info("AI request started", extra={"task": task, "model": settings.llm_model})
+    started = time.perf_counter()
+
+    def duration() -> float:
+        return round((time.perf_counter() - started) * 1000, 1)
+
     try:
         response = await llm.chat.completions.create(
             model=settings.llm_model, messages=messages, max_tokens=16000, **extra
         )
     except (APIStatusError, APIConnectionError) as exc:
-        raise _wrap(exc) from exc
+        error = _wrap(exc)
+        logger.warning(
+            "AI request failed",
+            extra={"task": task, "duration_ms": duration(), "reason": type(exc).__name__, "api_status": error.status_code},
+        )
+        raise error from exc
     choice = response.choices[0]
+    usage = getattr(response, "usage", None)
+    logger.info(
+        "AI request finished",
+        extra={
+            "task": task,
+            "duration_ms": duration(),
+            "finish_reason": choice.finish_reason,
+            "prompt_tokens": getattr(usage, "prompt_tokens", None),
+            "completion_tokens": getattr(usage, "completion_tokens", None),
+        },
+    )
     if choice.finish_reason == "content_filter" or getattr(choice.message, "refusal", None):
         raise LLMError(502, "The model declined to process this request.")
     if choice.finish_reason == "length":
@@ -90,7 +121,7 @@ async def review_resume(llm: AsyncOpenAI, profile: Profile, application: Applica
     }
     # Models differ in how well they follow a JSON schema, so allow one retry
     for attempt in range(2):
-        text = await _complete(llm, messages, response_format=response_format)
+        text = await _complete(llm, messages, "resume_review", response_format=response_format)
         try:
             return ATSReview.model_validate_json(_strip_fences(text))
         except ValidationError:
@@ -115,7 +146,9 @@ async def generate_cover_letter(
     task = "Write the cover letter."
     if instructions:
         task += f"\n\nExtra instructions from the candidate: {instructions}"
-    text = await _complete(llm, _messages(COVER_LETTER_WRITER, profile, application, task))
+    text = await _complete(
+        llm, _messages(COVER_LETTER_WRITER, profile, application, task), "cover_letter"
+    )
     if not text:
         raise LLMError(502, "The model returned an empty letter. Try again.")
     return text

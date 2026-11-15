@@ -102,3 +102,67 @@ def test_formatter_includes_the_stack_trace():
 def test_set_user_id_outside_a_request_does_nothing():
     set_user_id("u1")  # must not raise
     assert request_context.get() is None
+
+
+async def test_unhandled_error_is_logged_with_stack_trace(read_log):
+    from starlette.applications import Starlette
+    from starlette.routing import Route
+    from httpx import ASGITransport
+
+    from app.logging_config import RequestLogMiddleware
+
+    async def boom(_):
+        raise RuntimeError("kaboom")
+
+    small = RequestLogMiddleware(Starlette(routes=[Route("/boom", boom)]))
+    transport = ASGITransport(app=small, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        await c.get("/boom")
+    (line,) = _requests(read_log())
+    assert line["level"] == "ERROR"
+    assert line["status"] == 500
+    assert "RuntimeError: kaboom" in line["exception"]
+    assert line["request_id"]
+
+
+async def test_ai_calls_are_logged_without_the_resume(client: AsyncClient, read_log):
+    from tests.test_ai import FakeLLM, make_application, upload_resume
+    from app.llm.client import get_llm
+    from app.main import app
+
+    fake = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: fake
+    await client.put("/api/profile", json={"about_me": "my-private-story"})
+    await upload_resume(client)
+    application_id = await make_application(client, "a-private-job-text")
+    assert (await client.post(f"/api/applications/{application_id}/review")).status_code == 201
+
+    ai = [x for x in read_log() if x["logger"] == "app.llm.service"]
+    assert [x["message"] for x in ai] == ["AI request started", "AI request finished"]
+    assert ai[0]["task"] == "resume_review"
+    assert ai[1]["duration_ms"] >= 0 and ai[1]["finish_reason"] == "stop"
+    assert ai[0]["request_id"] == ai[1]["request_id"]
+    text = json.dumps(read_log())
+    assert "my-private-story" not in text and "a-private-job-text" not in text
+
+
+async def test_failed_ai_call_is_logged_as_warning(client: AsyncClient, read_log):
+    from openai import APIConnectionError
+    import httpx
+    from tests.test_ai import FakeLLM, make_application, upload_resume
+    from app.llm.client import get_llm
+    from app.main import app
+
+    fake = FakeLLM()
+
+    async def fail(**kwargs):
+        raise APIConnectionError(request=httpx.Request("POST", "http://x"))
+
+    fake.chat.completions.create = fail
+    app.dependency_overrides[get_llm] = lambda: fake
+    await upload_resume(client)
+    application_id = await make_application(client)
+    assert (await client.post(f"/api/applications/{application_id}/cover-letter", json={})).status_code == 503
+    failed = [x for x in read_log() if x["message"] == "AI request failed"]
+    assert len(failed) == 1 and failed[0]["level"] == "WARNING"
+    assert failed[0]["reason"] == "APIConnectionError" and failed[0]["api_status"] == 503

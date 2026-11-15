@@ -92,7 +92,7 @@ async def get_or_create_user(session: AsyncSession, sub: str, email: str | None 
         insert(User).values(cognito_sub=sub, email=email).on_conflict_do_nothing(index_elements=["cognito_sub"])
     )
     await session.commit()
-    logger.info("Created a user")
+    logger.info("Created a user")  # the request line has the user_id
     user = await _find(session, sub)
     assert user is not None
     return user
