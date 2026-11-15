@@ -9,10 +9,11 @@ from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import CurrentUser
 from app.db import get_session
 from app.llm import service
 from app.llm.client import get_llm
-from app.models import Application, CoverLetter, Profile, ResumeReview
+from app.models import Application, CoverLetter, Profile, ResumeReview, User
 from app.routers.applications import _get_detail
 from app.routers.profile import get_profile
 from app.schemas import (
@@ -31,10 +32,12 @@ LLM = Annotated[AsyncOpenAI, Depends(get_llm)]
 DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
-async def _inputs(session: AsyncSession, application_id: uuid.UUID) -> tuple[Profile, Application]:
+async def _inputs(
+    session: AsyncSession, application_id: uuid.UUID, user: User
+) -> tuple[Profile, Application]:
     """Load the profile and application, or 400 if either lacks what the model needs."""
-    application = await _get_detail(session, application_id)
-    profile = await get_profile(session)
+    application = await _get_detail(session, application_id, user)
+    profile = await get_profile(session, user)
     if not (application.job_description or "").strip():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Add a job description first")
     if profile.resume_pdf is None:
@@ -55,8 +58,8 @@ async def _letter(session: AsyncSession, application_id: uuid.UUID) -> CoverLett
 
 
 @router.post("/review", response_model=ResumeReviewRead, status_code=status.HTTP_201_CREATED)
-async def run_review(application_id: uuid.UUID, session: Session, llm: LLM):
-    profile, application = await _inputs(session, application_id)
+async def run_review(application_id: uuid.UUID, session: Session, llm: LLM, user: CurrentUser):
+    profile, application = await _inputs(session, application_id, user)
     try:
         review = await service.review_resume(llm, profile, application)
     except service.LLMError as exc:
@@ -73,8 +76,8 @@ async def run_review(application_id: uuid.UUID, session: Session, llm: LLM):
 
 
 @router.get("/review", response_model=ResumeReviewRead)
-async def latest_review(application_id: uuid.UUID, session: Session):
-    await _get_detail(session, application_id)
+async def latest_review(application_id: uuid.UUID, session: Session, user: CurrentUser):
+    await _get_detail(session, application_id, user)
     row = await session.scalar(
         select(ResumeReview)
         .where(ResumeReview.application_id == application_id)
@@ -88,9 +91,13 @@ async def latest_review(application_id: uuid.UUID, session: Session):
 
 @router.post("/cover-letter", response_model=CoverLetterRead)
 async def generate_letter(
-    application_id: uuid.UUID, payload: CoverLetterGenerate, session: Session, llm: LLM
+    application_id: uuid.UUID,
+    payload: CoverLetterGenerate,
+    session: Session,
+    llm: LLM,
+    user: CurrentUser,
 ):
-    profile, application = await _inputs(session, application_id)
+    profile, application = await _inputs(session, application_id, user)
     try:
         text = await service.generate_cover_letter(llm, profile, application, payload.instructions)
     except service.LLMError as exc:
@@ -108,8 +115,8 @@ async def generate_letter(
 
 
 @router.get("/cover-letter", response_model=CoverLetterRead)
-async def read_letter(application_id: uuid.UUID, session: Session):
-    await _get_detail(session, application_id)
+async def read_letter(application_id: uuid.UUID, session: Session, user: CurrentUser):
+    await _get_detail(session, application_id, user)
     letter = await _letter(session, application_id)
     if letter is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No cover letter yet")
@@ -117,8 +124,10 @@ async def read_letter(application_id: uuid.UUID, session: Session):
 
 
 @router.put("/cover-letter", response_model=CoverLetterRead)
-async def save_letter(application_id: uuid.UUID, payload: CoverLetterUpdate, session: Session):
-    await _get_detail(session, application_id)
+async def save_letter(
+    application_id: uuid.UUID, payload: CoverLetterUpdate, session: Session, user: CurrentUser
+):
+    await _get_detail(session, application_id, user)
     letter = await _letter(session, application_id)
     if letter is None:
         letter = CoverLetter(application_id=application_id, content=payload.content)
@@ -135,8 +144,8 @@ async def save_letter(application_id: uuid.UUID, payload: CoverLetterUpdate, ses
     response_class=Response,
     responses={200: {"content": {DOCX_TYPE: {}}}},
 )
-async def download_letter(application_id: uuid.UUID, session: Session):
-    application = await _get_detail(session, application_id)
+async def download_letter(application_id: uuid.UUID, session: Session, user: CurrentUser):
+    application = await _get_detail(session, application_id, user)
     letter = await _letter(session, application_id)
     if letter is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No cover letter yet")
