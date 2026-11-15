@@ -5,7 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.logging_config import RequestLogMiddleware, setup_logging
 from app.routers import ai, applications, me, profile, stats
+
+setup_logging(settings.log_level)
 
 
 @asynccontextmanager
@@ -23,6 +26,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added last, so it is the outer layer: it sees every request and every answer
+app.add_middleware(RequestLogMiddleware)
 
 app.include_router(applications.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
