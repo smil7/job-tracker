@@ -6,7 +6,7 @@ FastAPI + SQLAlchemy 2 (async) + PostgreSQL, managed with `uv`. Read [ARCHITECTU
 
 ```mermaid
 flowchart TB
-    main["main.py<br/>FastAPI app, CORS, /api prefix, /api/health"]
+    main["main.py<br/>FastAPI app, CORS, request log, /api prefix, /api/health"]
 
     subgraph routers["app/routers/"]
         apps["applications.py<br/>CRUD + timeline notes"]
