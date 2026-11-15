@@ -21,7 +21,7 @@ With login alone, any logged-in person could still read the data of any other pe
 
 ### Choice 1: `user_id` on `applications` and `profile` only
 
-The plan in `DEPLOYMENT_PLAN_AWS.md` said to add `user_id` to four tables: `applications`, `profile`, `resume_reviews` and `cover_letters`. I added it to **two**. This is a change from the plan. These are the reasons:
+The local deployment plan (not in the repo) said to add `user_id` to four tables: `applications`, `profile`, `resume_reviews` and `cover_letters`. I added it to **two**. This is a change from the plan. These are the reasons:
 
 - A review or a cover letter is always reached **through its application**. Each route calls `_get_detail(session, application_id, user)` first. That call returns 404 if the application is not owned by the user. So the child rows cannot be reached from another user.
 - A `user_id` on the child tables would copy the same fact in 3 places. Copies can become different (for example, a bug that sets the wrong `user_id`). With one owner column, there is one place to check.

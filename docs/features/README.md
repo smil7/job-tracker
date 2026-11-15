@@ -8,4 +8,4 @@ Each document explains **what** a feature does, **why** it was built this way, *
 | 2 | [Each user sees only their own data](02-data-per-user.md) | Owner column, filtered routes, 404 for other users, delete account, isolation tests. |
 | 3 | [Login in the browser](03-frontend-login.md) | Cognito hosted UI with PKCE, token on every request, log out. |
 
-The overall plan is in `docs/DEPLOYMENT_PLAN_AWS.md`. The step-by-step guide is in `docs/IMPLEMENTATION_GUIDE_AWS.md`. These features are Step 1 of that guide.
+These features are Step 1 of the AWS deployment guide. The plan and the guide are local notes and are not in the repo.
