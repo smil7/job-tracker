@@ -193,7 +193,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Is the API up AND can it reach the database? The load balancer calls this. No login.
+         */
         get: operations["health_api_health_get"];
         put?: never;
         post?: never;
@@ -423,6 +426,13 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Health */
+        Health: {
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
         };
         /**
          * JobType
@@ -1113,9 +1123,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description The database does not answer */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
                 };
             };
         };

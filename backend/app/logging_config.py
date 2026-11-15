@@ -28,7 +28,7 @@ REQUEST_ID_HEADER = "X-Request-Id"
 _VALID_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 # Attributes that every LogRecord has. Anything else came from `extra={...}` and is logged.
-_STANDARD_ATTRS = set(logging.makeLogRecord({}).__dict__) | {"message", "asctime", "taskName"}
+_STANDARD_ATTRS = set(logging.makeLogRecord({}).__dict__) | {"message", "asctime", "taskName", "color_message"}
 
 
 def set_user_id(user_id: str) -> None:
