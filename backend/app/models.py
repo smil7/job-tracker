@@ -126,6 +126,18 @@ class Profile(Base):
     )
 
 
+class AIUsage(Base):
+    """How many AI requests a user has started on one day (UTC). Used for the daily limit."""
+
+    __tablename__ = "ai_usage"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class ResumeReview(Base):
     __tablename__ = "resume_reviews"
 
