@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_session
+from app.logging_config import set_user_id
 from app.models import User
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,7 @@ async def get_or_create_user(session: AsyncSession, sub: str, email: str | None 
         insert(User).values(cognito_sub=sub, email=email).on_conflict_do_nothing(index_elements=["cognito_sub"])
     )
     await session.commit()
-    logger.info("Created a user")
+    logger.info("Created a user")  # the request line has the user_id
     user = await _find(session, sub)
     assert user is not None
     return user
@@ -106,6 +107,14 @@ async def current_user(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> User:
     """The logged-in user. Add this to a route to make the route private."""
+    user = await _resolve_user(credentials, session)
+    set_user_id(str(user.id))  # so every log line of this request shows who it was
+    return user
+
+
+async def _resolve_user(
+    credentials: HTTPAuthorizationCredentials | None, session: AsyncSession
+) -> User:
     if settings.auth_disabled:
         return await get_or_create_user(session, DEV_SUB, DEV_EMAIL)
 

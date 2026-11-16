@@ -854,6 +854,7 @@
           "meta"
         ],
         "summary": "Health",
+        "description": "Is the API up AND can it reach the database? The load balancer calls this. No login.",
         "operationId": "health_api_health_get",
         "responses": {
           "200": {
@@ -861,11 +862,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Health Api Health Get"
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database does not answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
                 }
               }
             }
@@ -1684,6 +1691,24 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "Health"
       },
       "JobType": {
         "type": "string",

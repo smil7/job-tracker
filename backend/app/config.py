@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # "development" or "production". Production refuses to start with login turned off.
     environment: str = "development"
     git_sha: str = "dev"
+    log_level: str = "INFO"
 
     # Login. When auth_disabled is true, every request runs as one fixed dev user.
     # The default is false, so a missing setting never leaves the API open.
