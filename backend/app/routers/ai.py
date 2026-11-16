@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai_quota import reserve_ai_request
 from app.auth import CurrentUser
 from app.db import get_session
 from app.llm import service
@@ -60,6 +61,7 @@ async def _letter(session: AsyncSession, application_id: uuid.UUID) -> CoverLett
 @router.post("/review", response_model=ResumeReviewRead, status_code=status.HTTP_201_CREATED)
 async def run_review(application_id: uuid.UUID, session: Session, llm: LLM, user: CurrentUser):
     profile, application = await _inputs(session, application_id, user)
+    await reserve_ai_request(session, user)
     try:
         review = await service.review_resume(llm, profile, application)
     except service.LLMError as exc:
@@ -98,6 +100,7 @@ async def generate_letter(
     user: CurrentUser,
 ):
     profile, application = await _inputs(session, application_id, user)
+    await reserve_ai_request(session, user)
     try:
         text = await service.generate_cover_letter(llm, profile, application, payload.instructions)
     except service.LLMError as exc:
