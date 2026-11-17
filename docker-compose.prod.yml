@@ -1,0 +1,59 @@
+# Runs the production build on your laptop, to test the image before AWS.
+#
+#   cd frontend && VITE_AUTH_DISABLED=true npm run build && cd ..
+#   GIT_SHA=$(git rev-parse --short HEAD) docker compose -f docker-compose.prod.yml up --build -d
+#   docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+#   open http://localhost:8080
+#
+# This file is for local tests only. It has a test password and no login.
+name: job-tracker-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jobtracker
+      POSTGRES_PASSWORD: jobtracker
+      POSTGRES_DB: jobtracker
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker -d jobtracker"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: backend
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    environment:
+      DATABASE_URL: postgresql+asyncpg://jobtracker:jobtracker@db:5432/jobtracker
+      # "staging", not "production": the app refuses to start with
+      # ENVIRONMENT=production and AUTH_DISABLED=true. Login is off only for this local test.
+      ENVIRONMENT: staging
+      AUTH_DISABLED: "true"
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata_prod:
