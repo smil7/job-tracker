@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     llm_base_url: str = "https://openrouter.ai/api/v1"
     llm_model: str = "anthropic/claude-sonnet-5.5"
+    # Most AI requests (resume review + cover letter) one user can start each day (UTC)
+    ai_daily_limit: int = 20
 
     # "development" or "production". Production refuses to start with login turned off.
     environment: str = "development"
